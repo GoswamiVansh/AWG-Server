@@ -20,7 +20,8 @@ const PORT = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: "awg-p7m3n31ai-vanshgoswami40-gmailcoms-projects.vercel.app",
+    origin:
+      "https://awg-miv0ag7kk-vanshgoswami40-gmailcoms-projects.vercel.app",
     credentials: true,
   }),
 );
