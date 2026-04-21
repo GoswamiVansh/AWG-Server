@@ -19,6 +19,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 const allowedOrigins = [
+  "https://www.artwithgarima.in/",
   "https://artwithgarima.in/",
   "https://awg-web-teal.vercel.app",
   "https://awg-web-git-main-vanshgoswami40-gmailcoms-projects.vercel.app",
