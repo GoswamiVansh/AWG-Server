@@ -23,7 +23,7 @@ const allowedOrigins = [
   "awg-web-git-main-vanshgoswami40-gmailcoms-projects.vercel.app",
   "awg-miv0ag7kk-vanshgoswami40-gmailcoms-projects.vercel.app",
 ];
-
+app.options("*", cors());
 app.use(
   cors({
     origin: function (origin, callback) {
