@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Order from '../models/Order';
+import { sendOrderStatusEmail } from '../utils/emailService';
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -70,7 +71,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       return;
     }
 
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findById(req.params.id).populate('user', 'name email phoneNumber');
 
     if (!order) {
       res.status(404).json({ message: 'Order not found' });
@@ -91,8 +92,32 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     }
 
     const updatedOrder = await order.save();
+
+    // Send email notification for accepted/dispatched/delivered
+    const user = order.user as any;
+    if (user && user.email && ['accepted', 'dispatched', 'delivered'].includes(status)) {
+      // Fire-and-forget: don't block the response
+      sendOrderStatusEmail(status, {
+        orderId: order._id.toString(),
+        customerName: user.name || 'Customer',
+        customerEmail: user.email,
+        items: order.items.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          image: item.image,
+        })),
+        totalPrice: order.totalPrice,
+        shippingAddress: order.shippingAddress,
+        paymentMethod: order.paymentMethod || 'Cash on Delivery',
+      }).catch((err) => {
+        console.error('Email notification error (non-blocking):', err);
+      });
+    }
+
     res.json(updatedOrder);
   } catch (error) {
     res.status(500).json({ message: 'Server error updating order status' });
   }
 };
+

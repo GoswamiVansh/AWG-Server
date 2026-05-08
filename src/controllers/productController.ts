@@ -49,7 +49,7 @@ export const getProductById = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const createProduct = async (req: Request, res: Response) => {
   try {
-    const { name, slug, description, price, category, stock, tags, images, isFeatured } = req.body;
+    const { name, slug, description, price, category, stock, tags, images, isFeatured, thumbnailVideo } = req.body;
 
     // Handle Category conversion from string to ObjectId
     let categoryId = category;
@@ -76,6 +76,7 @@ export const createProduct = async (req: Request, res: Response) => {
       tags: tags || [],
       images: images || [],
       isFeatured: isFeatured || false,
+      thumbnailVideo: thumbnailVideo || undefined,
     });
 
     const createdProduct = await product.save();
@@ -109,7 +110,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const updateProduct = async (req: Request, res: Response) => {
   try {
-    const { name, slug, description, price, category, stock, tags, images, isFeatured } = req.body;
+    const { name, slug, description, price, category, stock, tags, images, isFeatured, thumbnailVideo } = req.body;
     
     const product = await Product.findById(req.params.id);
 
@@ -136,8 +137,13 @@ export const updateProduct = async (req: Request, res: Response) => {
     product.category = categoryId || product.category;
     product.stock = stock || product.stock;
     product.tags = tags || product.tags;
-    product.images = images || product.images;
+    if (images !== undefined) {
+      product.images = images;
+    }
     product.isFeatured = isFeatured !== undefined ? isFeatured : product.isFeatured;
+    if (thumbnailVideo !== undefined) {
+      product.thumbnailVideo = thumbnailVideo;
+    }
 
     const updatedProduct = await product.save();
     res.json(updatedProduct);

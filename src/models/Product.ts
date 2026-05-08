@@ -10,6 +10,7 @@ export interface IProduct extends Document {
   stock: number;
   tags: string[];
   isFeatured: boolean;
+  thumbnailVideo?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +26,7 @@ const productSchema = new Schema<IProduct>(
     stock: { type: Number, required: true, default: 0 },
     tags: [{ type: String }],
     isFeatured: { type: Boolean, default: false },
+    thumbnailVideo: { type: String },
   },
   { timestamps: true }
 );

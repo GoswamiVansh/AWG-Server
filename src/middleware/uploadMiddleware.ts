@@ -1,10 +1,17 @@
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
+
+// Ensure the uploads folder exists (absolute path from project root)
+const uploadDir = path.resolve(__dirname, '../../uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // Destination and filename configs
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Ensure the 'uploads' folder exists in the root of 'backend'
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);

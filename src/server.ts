@@ -11,6 +11,7 @@ import productRoutes from "./routes/productRoutes";
 import videoRoutes from "./routes/videoRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import uploadRoutes from "./routes/uploadRoutes";
+import reviewRoutes from "./routes/reviewRoutes";
 import { notFound, errorHandler } from "./middleware/errorMiddleware";
 
 dotenv.config();
@@ -19,8 +20,9 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 const allowedOrigins = [
-  "https://www.artwithgarima.in/",
-  "https://artwithgarima.in/",
+  "https://www.artwithgarima.in",
+  "https://artwithgarima.in",
+  "https://awg-server.onrender.com",
   "https://awg-web-teal.vercel.app",
   "https://awg-web-git-main-vanshgoswami40-gmailcoms-projects.vercel.app",
   "https://awg-miv0ag7kk-vanshgoswami40-gmailcoms-projects.vercel.app",
@@ -29,7 +31,13 @@ const allowedOrigins = [
 ];
 
 const corsOptions: cors.CorsOptions = {
-  origin: true,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
 };
 
@@ -44,6 +52,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/videos", videoRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // Create uploads folder if it doesn't exist
 const uploadDir = path.join(__dirname, "../uploads");
