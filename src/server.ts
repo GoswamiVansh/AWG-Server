@@ -2,10 +2,11 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-
 import path from "path";
 import fs from "fs";
 import cookieParser from "cookie-parser";
+import bcrypt from "bcryptjs";
+
 import authRoutes from "./routes/authRoutes";
 import productRoutes from "./routes/productRoutes";
 import videoRoutes from "./routes/videoRoutes";
@@ -13,40 +14,55 @@ import orderRoutes from "./routes/orderRoutes";
 import uploadRoutes from "./routes/uploadRoutes";
 import reviewRoutes from "./routes/reviewRoutes";
 import { notFound, errorHandler } from "./middleware/errorMiddleware";
+import User from "./models/User";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const allowedOrigins = [
-  "https://www.artwithgarima.in",
-  "https://artwithgarima.in",
-  "https://awg-server.onrender.com",
-  "https://awg-web-teal.vercel.app",
-  "https://awg-web-git-main-vanshgoswami40-gmailcoms-projects.vercel.app",
-  "https://awg-miv0ag7kk-vanshgoswami40-gmailcoms-projects.vercel.app",
-  "http://localhost:3000",
-  "http://localhost:5173",
+/* ── CORS ────────────────────────────────────────────────────────────────
+ * Pattern-based origin validation instead of a hardcoded list.
+ * This automatically allows every new Vercel preview URL without
+ * requiring a server redeployment each time.
+ * ──────────────────────────────────────────────────────────────────────── */
+const ALLOWED_ORIGIN_PATTERNS: RegExp[] = [
+  // Production domain
+  /^https:\/\/(www\.)?artwithgarima\.in$/,
+  // Render server itself (server-to-server)
+  /^https:\/\/awg-server\.onrender\.com$/,
+  // Any Vercel preview URL from this account (e.g. awg-f6q8f6khc-vanshgoswami40-...)
+  /^https:\/\/[a-z0-9-]+-vanshgoswami40-gmailcoms-projects\.vercel\.app$/,
+  // Main & named Vercel deployments (e.g. awg-web-teal.vercel.app)
+  /^https:\/\/awg-web[a-z0-9-]*\.vercel\.app$/,
+  // Local development
+  /^http:\/\/localhost:\d+$/,
 ];
+
+const isOriginAllowed = (origin: string): boolean =>
+  ALLOWED_ORIGIN_PATTERNS.some((pattern) => pattern.test(origin));
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow server-to-server requests (no Origin header)
+    if (!origin) return callback(null, true);
+
+    if (isOriginAllowed(origin)) {
       callback(null, true);
     } else {
-      callback(new Error("Not allowed by CORS"));
+      console.warn(`[CORS] Blocked origin: ${origin}`);
+      callback(new Error(`CORS: origin '${origin}' not allowed`));
     }
   },
   credentials: true,
 };
 
 app.use(cors(corsOptions));
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+/* ── API Routes ─────────────────────────────────────────────────────── */
 app.use("/api/users", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/videos", videoRoutes);
@@ -54,18 +70,14 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/reviews", reviewRoutes);
 
-// Create uploads folder if it doesn't exist
+/* ── Static Uploads ─────────────────────────────────────────────────── */
 const uploadDir = path.join(__dirname, "../uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
-
-// Make the uploads folder publicly accessible via static route
 app.use("/uploads", express.static(uploadDir));
 
-import User from "./models/User";
-import bcrypt from "bcryptjs";
-
+/* ── Admin Seed Route ───────────────────────────────────────────────── */
 app.get("/api/seed-admin-global", async (req: Request, res: Response) => {
   try {
     const adminEmail = "admin@artwithgarima.com";
@@ -94,34 +106,36 @@ app.get("/api/seed-admin-global", async (req: Request, res: Response) => {
   }
 });
 
-app.get("/api/health", (req: Request, res: Response) => {
-  res
-    .status(200)
-    .json({ status: "OK", message: "Art with Garima API is running." });
+/* ── Health Check ───────────────────────────────────────────────────── */
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: "OK",
+    message: "Art with Garima API is running.",
+    dbState: mongoose.connection.readyState, // 0=disconnected 1=connected 2=connecting 3=disconnecting
+  });
 });
 
-// Error handling middleware
+/* ── Error Middleware ───────────────────────────────────────────────── */
 app.use(notFound);
 app.use(errorHandler);
 
-// Database connection placeholder
+/* ── Database Connection ────────────────────────────────────────────── */
 const connectDB = async () => {
+  if (!process.env.MONGO_URI) {
+    console.error("[DB] MONGO_URI env var is not set — cannot connect to MongoDB!");
+    process.exit(1);
+  }
   try {
-    if (process.env.MONGO_URI) {
-      await mongoose.connect(process.env.MONGO_URI);
-      console.log("MongoDB Connected");
-    } else {
-      console.log(
-        "No MONGO_URI provided, skipping database connection for now.",
-      );
-    }
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("[DB] MongoDB Connected");
   } catch (error) {
-    console.error("Error connecting to MongoDB:", error);
+    console.error("[DB] Connection failed:", error);
     process.exit(1);
   }
 };
 
+/* ── Start Server ───────────────────────────────────────────────────── */
 app.listen(PORT, async () => {
+  console.log(`[Server] Running on port ${PORT}`);
   await connectDB();
-  console.log(`Server running on port ${PORT}`);
 });
