@@ -31,10 +31,8 @@ const ALLOWED_ORIGIN_PATTERNS: RegExp[] = [
   /^https:\/\/(www\.)?artwithgarima\.in$/,
   // Render server itself (server-to-server)
   /^https:\/\/awg-server\.onrender\.com$/,
-  // Any Vercel preview URL from this account (e.g. awg-f6q8f6khc-vanshgoswami40-...)
-  /^https:\/\/[a-z0-9-]+-vanshgoswami40-gmailcoms-projects\.vercel\.app$/,
-  // Main & named Vercel deployments (e.g. awg-web-teal.vercel.app)
-  /^https:\/\/awg-web[a-z0-9-]*\.vercel\.app$/,
+  // Allow any Vercel preview/production URL
+  /^https:\/\/.*\.vercel\.app$/,
   // Local development
   /^http:\/\/localhost:\d+$/,
 ];
