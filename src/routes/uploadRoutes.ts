@@ -16,7 +16,13 @@ router.post('/', (req, res, next) => {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
-    res.json({ url: `/uploads/${req.file.filename}` });
+    // If Cloudinary is used, req.file.path is the full secure URL.
+    // Otherwise, it's local storage so we use the relative path.
+    const url = req.file.path && req.file.path.startsWith('http') 
+      ? req.file.path 
+      : `/uploads/${req.file.filename}`;
+      
+    res.json({ url });
   });
 });
 
@@ -31,7 +37,11 @@ router.post('/multiple', (req, res, next) => {
     if (!req.files || (req.files as Express.Multer.File[]).length === 0) {
       return res.status(400).json({ message: 'No files uploaded' });
     }
-    const urls = (req.files as Express.Multer.File[]).map(file => `/uploads/${file.filename}`);
+    const urls = (req.files as Express.Multer.File[]).map(file => {
+      return file.path && file.path.startsWith('http')
+        ? file.path
+        : `/uploads/${file.filename}`;
+    });
     res.json({ urls });
   });
 });
