@@ -343,3 +343,85 @@ export const sendOrderStatusEmail = async (
     return false;
   }
 };
+
+export const sendCustomRequestEmail = async (data: {
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  quantity: number;
+  material: string;
+  thoughts: string;
+  referencePhotoUrl?: string;
+}) => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.log("⚠️ Email not configured. Skipping email notification.");
+    return false;
+  }
+
+  const subject = `✨ New Custom Order Request from ${data.customerName}`;
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        ${baseStyles}
+      </style>
+    </head>
+    <body style="background:#fff6f9; margin:0; padding:20px;">
+      <div class="container">
+        <div class="header">
+          <p style="color:rgba(255,255,255,0.85); margin:0 0 4px; font-size:11px; letter-spacing:3px; text-transform:uppercase;">✦ Art With Garima ✦</p>
+          <h1>New Custom Request! 🎨</h1>
+          <p>A customer has shared their custom order thoughts</p>
+        </div>
+        <div class="body">
+          <p class="greeting">Customer Details:</p>
+          <ul style="list-style:none; padding:0; margin:0 0 20px; font-size:14px; color:#2d1b2e; line-height: 1.6;">
+            <li><strong>Name:</strong> ${data.customerName}</li>
+            <li><strong>Email:</strong> ${data.customerEmail}</li>
+            <li><strong>Phone:</strong> ${data.customerPhone || '—'}</li>
+          </ul>
+
+          <div class="section-title">📝 Request Details</div>
+          <div style="background:#fff6f9; border:1px solid rgba(232,114,154,0.2); border-radius:12px; padding:16px; margin-bottom:20px; font-size:14px; color:#5a4060;">
+            <p style="margin: 0 0 10px;"><strong>Quantity:</strong> ${data.quantity}</p>
+            <p style="margin: 0 0 10px;"><strong>Material:</strong> ${data.material}</p>
+            <p style="margin: 0 0 10px;"><strong>Thoughts/Description:</strong></p>
+            <p style="margin: 0; line-height: 1.6; white-space: pre-wrap;">${data.thoughts}</p>
+          </div>
+
+          ${data.referencePhotoUrl ? `
+            <div class="section-title">🖼️ Reference Photo</div>
+            <div style="text-align:center; margin-bottom:20px;">
+              <img src="${data.referencePhotoUrl}" alt="Reference Photo" style="max-width:100%; max-height:400px; border-radius:12px; border:1px solid #f3e8ec; object-fit:contain;" />
+              <p style="font-size:12px; color:#8a6570; margin-top:8px;">
+                <a href="${data.referencePhotoUrl}" target="_blank" style="color:#e8729a; text-decoration:none; font-weight:bold;">View Full Image</a>
+              </p>
+            </div>
+          ` : ''}
+        </div>
+        <div class="footer">
+          <p style="color:#e8729a; font-weight:600; letter-spacing:2px; margin-bottom:8px;">✦ ART WITH GARIMA ✦</p>
+          <p>This is an automated request notification.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  try {
+    const transporter = createTransporter();
+    await transporter.sendMail({
+      from: `"Art With Garima ✦" <${process.env.EMAIL_USER}>`,
+      to: process.env.EMAIL_USER, // send to admin
+      subject,
+      html,
+    });
+    console.log(`✅ Custom request notification email sent to admin`);
+    return true;
+  } catch (error) {
+    console.error("❌ Failed to send custom request notification email:", error);
+    return false;
+  }
+};

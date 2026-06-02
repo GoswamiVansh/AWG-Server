@@ -13,6 +13,7 @@ import videoRoutes from "./routes/videoRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import uploadRoutes from "./routes/uploadRoutes";
 import reviewRoutes from "./routes/reviewRoutes";
+import customRequestRoutes from "./routes/customRequestRoutes";
 import { notFound, errorHandler } from "./middleware/errorMiddleware";
 import User from "./models/User";
 
@@ -67,6 +68,7 @@ app.use("/api/videos", videoRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/custom-requests", customRequestRoutes);
 
 /* ── Static Uploads ─────────────────────────────────────────────────── */
 const uploadDir = path.join(__dirname, "../uploads");

@@ -113,8 +113,8 @@ export const createReview = async (req: Request, res: Response) => {
     const { images } = req.body;
 
     const review = await Review.create({
-      user: userId,
-      product: productId,
+      user: userId as any,
+      product: productId as any,
       rating: Math.round(rating),
       title: title.trim(),
       comment: comment.trim(),

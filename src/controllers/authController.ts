@@ -84,11 +84,16 @@ export const sendOtp = async (req: Request, res: Response) => {
 <div style="max-width:480px; margin:0 auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(232,114,154,0.12);">
   <div style="background:linear-gradient(135deg,#e8729a 0%,#c0536f 100%); padding:32px 24px; text-align:center;">
     <p style="color:rgba(255,255,255,0.85); margin:0 0 4px; font-size:11px; letter-spacing:3px; text-transform:uppercase;">✦ Art With Garima ✦</p>
-    <h1 style="color:#ffffff; margin:8px 0 0; font-size:22px; letter-spacing:1px;">Verify Your Email</h1>
+    <h1 style="color:#ffffff; margin:8px 0 0; font-size:22px; letter-spacing:1px;">Welcome to Art With Garima</h1>
   </div>
   <div style="padding:32px 24px; text-align:center;">
-    <p style="font-size:15px; color:#2d1b2e; margin-bottom:8px;">Hi there! 👋</p>
-    <p style="font-size:14px; color:#5a4060; line-height:1.6; margin-bottom:28px;">Enter this code to verify your email address and create your Art With Garima account:</p>
+    <p style="font-size:16px; color:#2d1b2e; margin-bottom:12px; font-weight:600;">Welcome here! 👋</p>
+    <p style="font-size:14px; color:#5a4060; line-height:1.6; margin-bottom:20px;">
+      Thank you for joining our community and starting to build this special bond with us. We are so excited to have you on board! 💕
+    </p>
+    <p style="font-size:14px; color:#5a4060; line-height:1.6; margin-bottom:28px;">
+      To complete your registration and verify your email, please use the following one-time verification code:
+    </p>
     <div style="background:linear-gradient(135deg,#fff6f9,#fce4ec); border:2px dashed #e8729a; border-radius:16px; padding:24px; margin-bottom:24px;">
       <p style="font-size:36px; font-weight:800; letter-spacing:12px; color:#c0536f; margin:0; font-family:monospace;">${code}</p>
     </div>
@@ -105,7 +110,7 @@ export const sendOtp = async (req: Request, res: Response) => {
       await transporter.sendMail({
         from: `"Art With Garima" <${process.env.EMAIL_USER}>`,
         to: email,
-        subject: `${code} — Your verification code for Art With Garima`,
+        subject: `Welcome to Art With Garima! Your verification code is ${code}`,
         html,
       });
 
@@ -281,6 +286,126 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     });
   } else {
     res.status(404).json({ message: "User not found" });
+  }
+};
+
+// @desc    Send OTP to email for password reset
+// @route   POST /api/users/forgot-password
+// @access  Public
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      res.status(400).json({ message: "Email is required" });
+      return;
+    }
+
+    // Check if user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      res.status(404).json({ message: "No account found with this email address" });
+      return;
+    }
+
+    // Rate limit check
+    if (isRateLimited(email)) {
+      res.status(429).json({ message: "Too many requests. Please try again later." });
+      return;
+    }
+
+    // Generate OTP
+    const code = createOtp(email);
+
+    // Send email
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+
+      const html = `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="background:#fff6f9; margin:0; padding:20px; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+<div style="max-width:480px; margin:0 auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(232,114,154,0.12);">
+  <div style="background:linear-gradient(135deg,#e8729a 0%,#c0536f 100%); padding:32px 24px; text-align:center;">
+    <p style="color:rgba(255,255,255,0.85); margin:0 0 4px; font-size:11px; letter-spacing:3px; text-transform:uppercase;">✦ Art With Garima ✦</p>
+    <h1 style="color:#ffffff; margin:8px 0 0; font-size:22px; letter-spacing:1px;">Reset Password</h1>
+  </div>
+  <div style="padding:32px 24px; text-align:center;">
+    <p style="font-size:16px; color:#2d1b2e; margin-bottom:12px; font-weight:600;">Hello! 👋</p>
+    <p style="font-size:14px; color:#5a4060; line-height:1.6; margin-bottom:20px;">
+      We received a request to reset the password for your Art With Garima account. Use the verification code below to proceed:
+    </p>
+    <div style="background:linear-gradient(135deg,#fff6f9,#fce4ec); border:2px dashed #e8729a; border-radius:16px; padding:24px; margin-bottom:24px;">
+      <p style="font-size:36px; font-weight:800; letter-spacing:12px; color:#c0536f; margin:0; font-family:monospace;">${code}</p>
+    </div>
+    <p style="font-size:12px; color:#c09aaa; margin-bottom:0;">This code expires in <strong>10 minutes</strong></p>
+    <p style="font-size:12px; color:#c09aaa;">If you did not request a password reset, please ignore this email.</p>
+  </div>
+  <div style="background:#2d1b2e; padding:20px; text-align:center;">
+    <p style="color:#e8729a; font-weight:600; letter-spacing:2px; margin:0 0 4px; font-size:11px;">✦ ART WITH GARIMA ✦</p>
+    <p style="color:rgba(255,255,255,0.5); font-size:11px; margin:0;">Handcrafted with love 💕</p>
+  </div>
+</div>
+</body></html>`;
+
+      await transporter.sendMail({
+        from: `"Art With Garima" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: `Reset your Art With Garima password: ${code}`,
+        html,
+      });
+
+      console.log(`✅ Reset password OTP sent to ${email}`);
+    } else {
+      console.log(`\n🔑 [DEV] Reset password OTP for ${email}: ${code}\n`);
+    }
+
+    res.json({ message: "Verification code sent to your email" });
+  } catch (error: any) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({ message: "Failed to send verification code" });
+  }
+};
+
+// @desc    Reset password using OTP code
+// @route   POST /api/users/reset-password
+// @access  Public
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { email, otp, password } = req.body;
+
+    if (!email || !otp || !password) {
+      res.status(400).json({ message: "All fields are required" });
+      return;
+    }
+
+    const result = verifyOtp(email, otp);
+
+    if (!result.valid) {
+      res.status(400).json({ message: result.message });
+      return;
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+    await user.save();
+
+    res.json({ message: "Password reset successfully!" });
+  } catch (error: any) {
+    console.error("Reset password error:", error);
+    res.status(500).json({ message: "Failed to reset password" });
   }
 };
 

@@ -21,7 +21,7 @@ export const getCategories = async (req: Request, res: Response) => {
 // @access  Public
 export const getProducts = async (req: Request, res: Response) => {
   try {
-    const products = await Product.find({}).populate('category', 'name');
+    const products = await Product.find({}).populate('category', 'name').sort({ createdAt: -1 });
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching products' });
@@ -49,7 +49,7 @@ export const getProductById = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const createProduct = async (req: Request, res: Response) => {
   try {
-    const { name, slug, description, price, category, stock, tags, images, isFeatured, thumbnailVideo } = req.body;
+    const { name, slug, description, price, category, stock, tags, images, isFeatured, isBestSeller, thumbnailVideo } = req.body;
 
     // Handle Category conversion from string to ObjectId
     let categoryId = category;
@@ -76,6 +76,7 @@ export const createProduct = async (req: Request, res: Response) => {
       tags: tags || [],
       images: images || [],
       isFeatured: isFeatured || false,
+      isBestSeller: isBestSeller || false,
       thumbnailVideo: thumbnailVideo || undefined,
     });
 
@@ -110,7 +111,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const updateProduct = async (req: Request, res: Response) => {
   try {
-    const { name, slug, description, price, category, stock, tags, images, isFeatured, thumbnailVideo } = req.body;
+    const { name, slug, description, price, category, stock, tags, images, isFeatured, isBestSeller, thumbnailVideo } = req.body;
     
     const product = await Product.findById(req.params.id);
 
@@ -141,6 +142,7 @@ export const updateProduct = async (req: Request, res: Response) => {
       product.images = images;
     }
     product.isFeatured = isFeatured !== undefined ? isFeatured : product.isFeatured;
+    product.isBestSeller = isBestSeller !== undefined ? isBestSeller : product.isBestSeller;
     if (thumbnailVideo !== undefined) {
       product.thumbnailVideo = thumbnailVideo;
     }
