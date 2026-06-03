@@ -154,3 +154,36 @@ export const updateProduct = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error updating product', error });
   }
 };
+
+// @desc    Create a category
+// @route   POST /api/products/categories
+// @access  Private/Admin
+export const createCategory = async (req: Request, res: Response) => {
+  try {
+    const { name, description } = req.body;
+    if (!name) {
+      return res.status(400).json({ message: 'Category name is required' });
+    }
+
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+    // Check if category already exists
+    const categoryExists = await Category.findOne({ slug });
+    if (categoryExists) {
+      return res.status(400).json({ message: 'Category already exists' });
+    }
+
+    const category = new Category({
+      name,
+      slug,
+      description
+    });
+
+    const createdCategory = await category.save();
+    res.status(201).json(createdCategory);
+  } catch (error) {
+    console.error('Error creating category:', error);
+    res.status(500).json({ message: 'Server error creating category', error });
+  }
+};
+
