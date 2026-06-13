@@ -7,10 +7,10 @@ import { sendCustomRequestEmail } from '../utils/emailService';
 // @access  Private
 export const createCustomRequest = async (req: Request, res: Response) => {
   try {
-    const { quantity, material, referencePhoto, thoughts } = req.body;
+    const { quantity, material, referencePhoto, thoughts, whatsappNumber } = req.body;
 
-    if (!quantity || !material || !thoughts) {
-      return res.status(400).json({ message: 'Quantity, material, and thoughts fields are required.' });
+    if (!quantity || !material || !thoughts || !whatsappNumber) {
+      return res.status(400).json({ message: 'Quantity, material, thoughts, and whatsappNumber fields are required.' });
     }
 
     const newRequest = new CustomRequest({
@@ -19,6 +19,7 @@ export const createCustomRequest = async (req: Request, res: Response) => {
       material,
       referencePhoto,
       thoughts,
+      whatsappNumber,
     });
 
     const savedRequest = await newRequest.save();
@@ -39,6 +40,7 @@ export const createCustomRequest = async (req: Request, res: Response) => {
         quantity: Number(quantity),
         material,
         thoughts,
+        whatsappNumber,
         referencePhotoUrl: fullPhotoUrl,
       }).catch(err => {
         console.error('Failed to send email notification async:', err);
@@ -58,7 +60,7 @@ export const createCustomRequest = async (req: Request, res: Response) => {
 export const getCustomRequests = async (req: Request, res: Response) => {
   try {
     const requests = await CustomRequest.find({})
-      .populate('user', 'name email phoneNumber')
+      .populate('user', 'name email phoneNumber whatsappNumber')
       .sort({ createdAt: -1 });
     res.json(requests);
   } catch (error) {

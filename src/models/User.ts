@@ -4,6 +4,8 @@ export interface IUser extends Document {
   name: string;
   email: string;
   phoneNumber?: string;
+  whatsappNumber?: string;
+  whatsappOptIn?: boolean;
   password?: string;
   role: 'user' | 'admin';
   addresses: {
@@ -25,6 +27,8 @@ const userSchema = new Schema<IUser>(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     phoneNumber: { type: String, required: false },
+    whatsappNumber: { type: String, required: true },
+    whatsappOptIn: { type: Boolean, required: true, default: false },
     password: { type: String, required: false }, // Optional for OAuth
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
     addresses: [

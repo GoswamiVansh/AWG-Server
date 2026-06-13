@@ -116,8 +116,9 @@ export const sendOtp = async (req: Request, res: Response) => {
 
       console.log(`✅ OTP sent to ${email}`);
     } else {
-      // Dev fallback — log code to console
-      console.log(`\n🔑 [DEV] OTP for ${email}: ${code}\n`);
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`\n🔑 [DEV] OTP for ${email}: ${code}\n`);
+      }
     }
 
     res.json({ message: "Verification code sent to your email" });
@@ -161,8 +162,8 @@ export const verifyOtpCode = async (req: Request, res: Response) => {
 // @access  Public
 export const registerUser = async (req: Request, res: Response) => {
   try {
-    const { name, email, password, phoneNumber } = req.body;
-    console.log("Registration attempt:", { name, email, phoneNumber });
+    const { name, email, password, phoneNumber, whatsappNumber, whatsappOptIn } = req.body;
+    // Remove the console log with sensitive registration info
 
     // Check that email was verified via OTP
     if (!isEmailVerified(email)) {
@@ -185,6 +186,8 @@ export const registerUser = async (req: Request, res: Response) => {
       name,
       email,
       phoneNumber,
+      whatsappNumber,
+      whatsappOptIn,
       password: hashedPassword,
     });
 
@@ -200,6 +203,8 @@ export const registerUser = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         phoneNumber: user.phoneNumber,
+        whatsappNumber: user.whatsappNumber,
+        whatsappOptIn: user.whatsappOptIn,
         role: user.role,
         token,
       });
@@ -238,6 +243,8 @@ export const getUserProfile = async (req: Request, res: Response) => {
       email: req.user.email,
       role: req.user.role,
       phoneNumber: req.user.phoneNumber,
+      whatsappNumber: req.user.whatsappNumber,
+      whatsappOptIn: req.user.whatsappOptIn,
       addresses: req.user.addresses,
     });
   } else {
@@ -261,6 +268,12 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     if (req.body.phoneNumber !== undefined) {
       user.phoneNumber = req.body.phoneNumber;
     }
+    if (req.body.whatsappNumber !== undefined) {
+      user.whatsappNumber = req.body.whatsappNumber;
+    }
+    if (req.body.whatsappOptIn !== undefined) {
+      user.whatsappOptIn = req.body.whatsappOptIn;
+    }
     
     if (req.body.addresses) {
       user.addresses = req.body.addresses;
@@ -280,6 +293,8 @@ export const updateUserProfile = async (req: Request, res: Response) => {
       name: updatedUser.name,
       email: updatedUser.email,
       phoneNumber: updatedUser.phoneNumber,
+      whatsappNumber: updatedUser.whatsappNumber,
+      whatsappOptIn: updatedUser.whatsappOptIn,
       role: updatedUser.role,
       addresses: updatedUser.addresses,
       token,
@@ -363,7 +378,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
       console.log(`✅ Reset password OTP sent to ${email}`);
     } else {
-      console.log(`\n🔑 [DEV] Reset password OTP for ${email}: ${code}\n`);
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`\n🔑 [DEV] Reset password OTP for ${email}: ${code}\n`);
+      }
     }
 
     res.json({ message: "Verification code sent to your email" });

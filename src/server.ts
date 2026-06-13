@@ -6,6 +6,9 @@ import path from "path";
 import fs from "fs";
 import cookieParser from "cookie-parser";
 import bcrypt from "bcryptjs";
+import dns from "dns";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 import authRoutes from "./routes/authRoutes";
 import productRoutes from "./routes/productRoutes";
@@ -17,7 +20,11 @@ import customRequestRoutes from "./routes/customRequestRoutes";
 import { notFound, errorHandler } from "./middleware/errorMiddleware";
 import User from "./models/User";
 
-dotenv.config();
+dotenv.config({ override: true });
+
+// Set public DNS servers to resolve MongoDB Atlas SRV records correctly on local environments
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -57,9 +64,25 @@ const corsOptions: cors.CorsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(helmet({
+  crossOriginResourcePolicy: false, // Allows cross-origin images (important for serving R2/Cloudinary links)
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Trust proxy for rate limiting behind load balancers (e.g., Render, Vercel)
+app.set("trust proxy", 1);
+
+// Rate Limiting
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // Limit each IP to 200 requests per `window` (here, per 15 minutes)
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: "Too many requests from this IP, please try again after 15 minutes",
+});
+app.use("/api/", apiLimiter);
 
 /* ── API Routes ─────────────────────────────────────────────────────── */
 app.use("/api/users", authRoutes);
@@ -111,7 +134,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
   res.status(200).json({
     status: "OK",
     message: "Art with Garima API is running.",
-    dbState: mongoose.connection.readyState, // 0=disconnected 1=connected 2=connecting 3=disconnecting
+    dbState: mongoose.connection.readyState,
   });
 });
 

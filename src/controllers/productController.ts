@@ -72,7 +72,7 @@ export const createProduct = async (req: Request, res: Response) => {
       description: description || 'Sample description',
       price: price || 0,
       category: categoryId, 
-      stock: stock || 0,
+      stock: stock !== undefined ? stock : 0,
       tags: tags || [],
       images: images || [],
       isFeatured: isFeatured || false,
@@ -136,7 +136,7 @@ export const updateProduct = async (req: Request, res: Response) => {
     product.description = description || product.description;
     product.price = price || product.price;
     product.category = categoryId || product.category;
-    product.stock = stock || product.stock;
+    product.stock = stock !== undefined ? stock : product.stock;
     product.tags = tags || product.tags;
     if (images !== undefined) {
       product.images = images;

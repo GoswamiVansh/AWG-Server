@@ -348,6 +348,7 @@ export const sendCustomRequestEmail = async (data: {
   customerName: string;
   customerEmail: string;
   customerPhone?: string;
+  whatsappNumber: string;
   quantity: number;
   material: string;
   thoughts: string;
@@ -381,6 +382,7 @@ export const sendCustomRequestEmail = async (data: {
             <li><strong>Name:</strong> ${data.customerName}</li>
             <li><strong>Email:</strong> ${data.customerEmail}</li>
             <li><strong>Phone:</strong> ${data.customerPhone || '—'}</li>
+            <li><strong>WhatsApp:</strong> ${data.whatsappNumber}</li>
           </ul>
 
           <div class="section-title">📝 Request Details</div>

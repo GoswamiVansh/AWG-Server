@@ -6,6 +6,7 @@ export interface ICustomRequest extends Document {
   material: string;
   referencePhoto?: string;
   thoughts: string;
+  whatsappNumber: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +18,7 @@ const customRequestSchema = new Schema<ICustomRequest>(
     material: { type: String, required: true },
     referencePhoto: { type: String },
     thoughts: { type: String, required: true },
+    whatsappNumber: { type: String, required: true },
   },
   { timestamps: true }
 );

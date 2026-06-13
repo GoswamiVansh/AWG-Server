@@ -6,7 +6,7 @@ import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import dotenv from 'dotenv';
 import { S3Client, PutObjectCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
 
-dotenv.config();
+dotenv.config({ override: true });
 
 // Configure Cloudinary
 cloudinary.config({
