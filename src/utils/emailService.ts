@@ -1,15 +1,6 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
-// Create a reusable transporter
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS, // Gmail App Password
-    },
-  });
-};
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 interface OrderItem {
   name: string;
@@ -299,8 +290,8 @@ export const sendOrderStatusEmail = async (
   data: OrderEmailData
 ): Promise<boolean> => {
   // Skip if email credentials are not configured
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.log("⚠️  Email not configured (EMAIL_USER / EMAIL_PASS missing). Skipping email notification.");
+  if (!resend) {
+    console.log("⚠️  Resend not configured. Skipping email notification.");
     return false;
   }
 
@@ -327,14 +318,17 @@ export const sendOrderStatusEmail = async (
   }
 
   try {
-    const transporter = createTransporter();
-
-    await transporter.sendMail({
-      from: `"Art With Garima ✦" <${process.env.EMAIL_USER}>`,
+    const { error } = await resend.emails.send({
+      from: 'Art With Garima <hello@artwithgarima.in>',
       to: data.customerEmail,
       subject: emailContent.subject,
       html: emailContent.html,
     });
+
+    if (error) {
+      console.error("❌ Failed to send email:", error);
+      return false;
+    }
 
     console.log(`✅ Email sent to ${data.customerEmail} for status: ${status}`);
     return true;
@@ -354,8 +348,8 @@ export const sendCustomRequestEmail = async (data: {
   thoughts: string;
   referencePhotoUrl?: string;
 }) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.log("⚠️ Email not configured. Skipping email notification.");
+  if (!resend) {
+    console.log("⚠️ Resend not configured. Skipping email notification.");
     return false;
   }
 
@@ -413,13 +407,19 @@ export const sendCustomRequestEmail = async (data: {
   `;
 
   try {
-    const transporter = createTransporter();
-    await transporter.sendMail({
-      from: `"Art With Garima ✦" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER, // send to admin
+    const adminEmail = process.env.ADMIN_EMAIL || 'artwithgarima88@gmail.com'; // Fallback to provided email
+    const { error } = await resend.emails.send({
+      from: 'Art With Garima <hello@artwithgarima.in>',
+      to: adminEmail, // send to admin
       subject,
       html,
     });
+
+    if (error) {
+      console.error("❌ Failed to send custom request notification email:", error);
+      return false;
+    }
+
     console.log(`✅ Custom request notification email sent to admin`);
     return true;
   } catch (error) {

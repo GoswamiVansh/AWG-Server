@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 import User from "../models/User";
 import generateToken from "../utils/generateToken";
 import {
@@ -68,15 +69,7 @@ export const sendOtp = async (req: Request, res: Response) => {
     const code = createOtp(email);
 
     // Send email (or log to console in dev if email not configured)
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
-        },
-      });
-
+    if (resend) {
       const html = `
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -107,12 +100,18 @@ export const sendOtp = async (req: Request, res: Response) => {
 </div>
 </body></html>`;
 
-      await transporter.sendMail({
-        from: `"Art With Garima" <${process.env.EMAIL_USER}>`,
+      const { error } = await resend.emails.send({
+        from: 'Art With Garima <hello@artwithgarima.in>',
         to: email,
         subject: `Welcome to Art With Garima! Your verification code is ${code}`,
         html,
       });
+
+      if (error) {
+        console.error("Resend error:", error);
+        res.status(500).json({ message: "Failed to send verification code" });
+        return;
+      }
 
       console.log(`✅ OTP sent to ${email}`);
     } else {
@@ -333,15 +332,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const code = createOtp(email);
 
     // Send email
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
-        },
-      });
-
+    if (resend) {
       const html = `
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -369,12 +360,18 @@ export const forgotPassword = async (req: Request, res: Response) => {
 </div>
 </body></html>`;
 
-      await transporter.sendMail({
-        from: `"Art With Garima" <${process.env.EMAIL_USER}>`,
+      const { error } = await resend.emails.send({
+        from: 'Art With Garima <hello@artwithgarima.in>',
         to: email,
         subject: `Reset your Art With Garima password: ${code}`,
         html,
       });
+
+      if (error) {
+        console.error("Resend error:", error);
+        res.status(500).json({ message: "Failed to send verification code" });
+        return;
+      }
 
       console.log(`✅ Reset password OTP sent to ${email}`);
     } else {
