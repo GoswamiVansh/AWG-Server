@@ -187,3 +187,48 @@ export const createCategory = async (req: Request, res: Response) => {
   }
 };
 
+// @desc    Delete a category
+// @route   DELETE /api/products/categories/:id
+// @access  Private/Admin
+export const deleteCategory = async (req: Request, res: Response) => {
+  try {
+    const category = await Category.findById(req.params.id);
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    await Category.deleteOne({ _id: category._id });
+    res.json({ message: 'Category removed' });
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    res.status(500).json({ message: 'Server error deleting category', error });
+  }
+};
+
+// @desc    Update a category
+// @route   PUT /api/products/categories/:id
+// @access  Private/Admin
+export const updateCategory = async (req: Request, res: Response) => {
+  try {
+    const category = await Category.findById(req.params.id);
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    const { name, description } = req.body;
+
+    if (name) {
+      category.name = name;
+      category.slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+    if (description !== undefined) {
+      category.description = description;
+    }
+
+    const updatedCategory = await category.save();
+    res.json(updatedCategory);
+  } catch (error) {
+    console.error('Error updating category:', error);
+    res.status(500).json({ message: 'Server error updating category', error });
+  }
+};

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Order from '../models/Order';
+import Product from '../models/Product';
 import { sendOrderStatusEmail } from '../utils/emailService';
 
 // @desc    Create new order
@@ -17,6 +18,26 @@ export const createOrder = async (req: Request, res: Response) => {
     if (!items || items.length === 0) {
       res.status(400).json({ message: 'No order items' });
       return;
+    }
+
+    // Verify stock for all items
+    for (const item of items) {
+      const product = await Product.findById(item.product);
+      if (!product) {
+        res.status(404).json({ message: `Product ${item.name} not found` });
+        return;
+      }
+      if (product.stock < item.quantity) {
+        res.status(400).json({ message: `Not enough stock for ${item.name}. Available: ${product.stock}` });
+        return;
+      }
+    }
+
+    // Deduct stock for all items
+    for (const item of items) {
+      await Product.findByIdAndUpdate(item.product, {
+        $inc: { stock: -item.quantity }
+      });
     }
 
     const order = await Order.create({
@@ -54,7 +75,8 @@ export const getOrders = async (req: Request, res: Response) => {
     const orders = await Order.find({}).populate('user', 'id name email phoneNumber').sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
-    res.status(500).json({ message: 'Server error fetching orders' });
+    console.error('Error fetching orders:', error);
+    res.status(500).json({ message: 'Server error fetching orders', error });
   }
 };
 
@@ -76,6 +98,31 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     if (!order) {
       res.status(404).json({ message: 'Order not found' });
       return;
+    }
+
+    // Handle stock if order is rejected or un-rejected
+    if (order.orderStatus !== 'rejected' && status === 'rejected') {
+      // Revert stock
+      for (const item of order.items) {
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { stock: item.quantity }
+        });
+      }
+    } else if (order.orderStatus === 'rejected' && status !== 'rejected') {
+      // Deduct stock again
+      // Verify first
+      for (const item of order.items) {
+        const product = await Product.findById(item.product);
+        if (product && product.stock < item.quantity) {
+          res.status(400).json({ message: `Cannot change status to ${status}. Not enough stock for ${item.name}. Available: ${product.stock}` });
+          return;
+        }
+      }
+      for (const item of order.items) {
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { stock: -item.quantity }
+        });
+      }
     }
 
     order.orderStatus = status;
