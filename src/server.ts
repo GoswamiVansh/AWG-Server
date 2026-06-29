@@ -43,6 +43,7 @@ const ALLOWED_ORIGIN_PATTERNS: RegExp[] = [
   /^https:\/\/.*\.vercel\.app$/,
   // Local development
   /^http:\/\/localhost:\d+$/,
+  /^https:\/\/(www\.)?media.artwithgarima\.in$/
 ];
 
 const isOriginAllowed = (origin: string): boolean =>
